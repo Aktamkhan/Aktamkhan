@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <title>Shaxsiy Moliya</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f7f7f7;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    input, select, button {
+      padding: 10px;
+      margin: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .transaction {
+      display: flex;
+      justify-content: space-between;
+      background: #fff;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px #ddd;
+    }
+    #balance {
+      font-size: 1.2em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Shaxsiy Moliya Kuzatuvchi</h2>
+
+  <input type="number" id="amount" placeholder="Summani kiriting">
+  <select id="type">
+    <option value="income">Daromad</option>
+    <option value="expense">Xarajat</option>
+  </select>
+  <input type="text" id="desc" placeholder="Izoh (masalan: Oylik, Yegulik)">
+  <button onclick="addTransaction()">Qo'shish</button>
+
+  <div id="balance">Jami balans: 0 so'm</div>
+  <div id="transactions"></div>
+  <canvas id="chart" height="100"></canvas>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("financeData")) || [];
+    const balanceDiv = document.getElementById("balance");
+    const transactionsDiv = document.getElementById("transactions");
+    const chartCanvas = document.getElementById("chart");
+
+    function addTransaction() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      const type = document.getElementById("type").value;
+      const desc = document.getElementById("desc").value;
+      if (!amount || !desc) return;
+
+      data.push({ amount, type, desc, time: new Date() });
+      localStorage.setItem("financeData", JSON.stringify(data));
+      render();
+    }
+
+    function render() {
+      let balance = 0;
+      transactionsDiv.innerHTML = "";
+
+      data.forEach(tx => {
+        if (tx.type === "income") balance += tx.amount;
+        else balance -= tx.amount;
+
+        const div = document.createElement("div");
+        div.className = "transaction";
+        div.innerHTML = `
+          <span>${tx.desc}</span>
+          <span>${tx.type === "income" ? "+" : "-"}${tx.amount} so'm</span>
+        `;
+        transactionsDiv.appendChild(div);
+      });
+
+      balanceDiv.innerText = `Jami balans: ${balance.toLocaleString()} so'm`;
+      renderChart();
+    }
+
+    function renderChart() {
+      const incomes = data.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+      const expenses = data.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+
+      new Chart(chartCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Daromad', 'Xarajat'],
+          datasets: [{
+            data: [incomes, expenses],
+            backgroundColor: ['green', 'red']
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    render();
+  </script>
+
+</body>
+</html>
+<h2>Valyuta Konvertori</h2>
+
+<input type="number" id="currency-amount" placeholder="Miqdorni kiriting">
+<select id="from-currency">
+  <option value="USD">USD</option>
+  <option value="UZS">UZS</option>
+</select>
+<select id="to-currency">
+  <option value="UZS">UZS</option>
+  <option value="USD">USD</option>
+</select>
+<button onclick="convertCurrency()">Aylantirish</button>
+<p id="conversion-result"></p>
+
+<script>
+function convertCurrency() {
+  const amount = parseFloat(document.getElementById("currency-amount").value);
+  const from = document.getElementById("from-currency").value;
+  const to = document.getElementById("to-currency").value;
+  let rate = 1;
+
+  // Statik valyuta kurslari
+  if (from === "USD" && to === "UZS") rate = 19700;
+  else if (from === "UZS" && to === "USD") rate = 1 / 19700;
+
+  const result = amount * rate;
+  document.getElementById("conversion-result").innerText = 
+    `${amount} ${from} = ${result.toFixed(2)} ${to}`;
+}
+</script>
+<h2>Kredit Kalkulyatori</h2>
+
+<input type="number" id="loan-amount" placeholder="Kredit miqdori (so'm)">
+<input type="number" id="interest-rate" placeholder="Foiz stavkasi (% yillik)">
+<input type="number" id="loan-years" placeholder="Muddat (yil)">
+<button onclick="calculateLoan()">Hisoblash</button>
+<p id="loan-result"></p>
+
+<script>
+function calculateLoan() {
+  const amount = parseFloat(document.getElementById("loan-amount").value);
+  const annualRate = parseFloat(document.getElementById("interest-rate").value) / 100;
+  const years = parseFloat(document.getElementById("loan-years").value);
+  
+  const monthlyRate = annualRate / 12;
+  const n = years * 12;
+
+  const monthlyPayment = (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -n));
+  const totalPayment = monthlyPayment * n;
+
+  if (!isNaN(monthlyPayment)) {
+    document.getElementById("loan-result").innerText = 
+      `Oylik to'lov: ${monthlyPayment.toFixed(2)} so'm\nJami to'lov: ${totalPayment.toFixed(2)} so'm`;
+  } else {
+    document.getElementById("loan-result").innerText = "Iltimos, barcha maydonlarni to‘ldiring.";
+  }
+}
+</script>
+<h2>Makroiqtisodiy Ko‘rsatkichlar</h2>
+
+<canvas id="macroChart" height="100"></canvas>
+
+<script>
+const labels = ["2021", "2022", "2023", "2024"];
+const yaim = [70, 78, 85, 90]; // Yalpi ichki mahsulot (mlrd $)
+const inflyatsiya = [11.5, 10.3, 9.8, 8.6]; // Yillik foizda
+const ishsizlik = [9.5, 8.7, 8.2, 7.5]; // Yillik foizda
+
+new Chart(document.getElementById("macroChart"), {
+  type: "line",
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: "YAIM (mlrd $)",
+        data: yaim,
+        borderColor: "blue",
+        fill: false
+      },
+      {
+        label: "Inflyatsiya (%)",
+        data: inflyatsiya,
+        borderColor: "red",
+        fill: false
+      },
+      {
+        label: "Ishsizlik (%)",
+        data: ishsizlik,
+        borderColor: "green",
+        fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero: false }
+    }
+  }
+});
+</script>
+ <h2>Soliq Hisobi</h2>
+
+<input type="number" id="income" placeholder="Yillik daromadingiz (so'm)">
+<button onclick="calculateTax()">Hisoblash</button>
+<p id="tax-result"></p>
+
+<script>
+function calculateTax() {
+  const income = parseFloat(document.getElementById("income").value);
+  let tax = 0;
+
+  // Oddiy soliq tizimi (misol tariqasida)
+  if (income <= 12000000) {
+    tax = income * 0.12;
+  } else if (income <= 24000000) {
+    tax = income * 0.15;
+  } else {
+    tax = income * 0.20;
+  }
+
+  document.getElementById("tax-result").innerText = 
+    `Hisoblangan yillik soliq: ${tax.toLocaleString()} so'm`;
+}
+</script>
+<h2>Narx – Taklif Grafikasi</h2>
+<canvas id="supplyDemandChart" height="120"></canvas>
+
+<script>
+const prices = [10, 20, 30, 40, 50];
+const demand = [90, 70, 50, 30, 10]; // Past narxda talab ko'p
+const supply = [10, 30, 50, 70, 90]; // Yuqori narxda taklif ko'p
+
+new Chart(document.getElementById("supplyDemandChart"), {
+  type: "line",
+  data: {
+    labels: prices,
+    datasets: [
+      {
+        label: "Talab",
+        data: demand,
+        borderColor: "blue",
+        fill: false
+      },
+      {
+        label: "Taklif",
+        data: supply,
+        borderColor: "orange",
+        fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Narx"
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Miqdor"
+        }
+      }
+    }
+  }
+});
+</script>
