@@ -131,8 +131,8 @@ function convertCurrency() {
   let rate = 1;
 
   // Statik valyuta kurslari
-  if (from === "USD" && to === "UZS") rate = 12950;
-  else if (from === "UZS" && to === "USD") rate = 1 / 12950;
+  if (from === "USD" && to === "UZS") rate = 12902;
+  else if (from === "UZS" && to === "USD") rate = 1 / 12902;
 
   const result = amount * rate;
   document.getElementById("conversion-result").innerText = 
