@@ -70,7 +70,7 @@
   </style>
 </head>
 <body>
-<h1>OShP Platforma</h1>
+<h1>Oilaviy.poliklinika.uz</h1>
 
 <div class="search-box">
   <input type="text" id="searchInput" placeholder="Qidiruv..." oninput="renderTable()" />
